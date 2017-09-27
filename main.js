@@ -1,11 +1,5 @@
-const electron = require('electron')
-// Module to control application life.
-const app = electron.app
-// Module to create native browser window.
-const BrowserWindow = electron.BrowserWindow
-
-const path = require('path')
-const url = require('url')
+// Modules to control application life and create native browser window
+const {app, BrowserWindow} = require('electron')
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -13,14 +7,17 @@ let mainWindow
 
 function createWindow () {
   // Create the browser window.
-  mainWindow = new BrowserWindow({width: 800, height: 600})
+  mainWindow = new BrowserWindow({
+    width: 800, height: 600,
+    webPreferences: {
+      nativeWindowOpen: true,
+      sandbox:true,
+      preload: __dirname+'/preload-main.js'
+    }
+  })
 
   // and load the index.html of the app.
-  mainWindow.loadURL(url.format({
-    pathname: path.join(__dirname, 'index.html'),
-    protocol: 'file:',
-    slashes: true
-  }))
+  mainWindow.loadFile('index.html')
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
@@ -32,6 +29,14 @@ function createWindow () {
     // when you should delete the corresponding element.
     mainWindow = null
   })
+
+   mainWindow.webContents.on('new-window', (event, url, frameName, disposition, options, additionalFeatures) => {
+      event.preventDefault()
+      options.webPreferences['preload'] =  __dirname +'/preload-popup.js';
+      let win = new BrowserWindow(options);
+      win.loadURL(url);
+      event.newGuest = win;
+     })
 }
 
 // This method will be called when Electron has finished
